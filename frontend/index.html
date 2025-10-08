@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <title>SQL Viewer – TD1</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 24px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 130px;
+        }
+
+        button {
+            padding: 8px 12px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 6px 8px;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f7f7f7;
+            text-align: left;
+        }
+
+        .rowcount {
+            color: #666;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .error {
+            color: #b00020;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>TD1 – SQL viewer</h1>
+    <p>Écris une requête <b>SELECT</b> (MOS/NOS) puis clique “Exécuter”.</p>
+
+    <textarea id="sql">SELECT id, nom, prenom, date_naissance FROM patient ORDER BY id LIMIT 20;</textarea>
+    <div style="margin:8px 0;">
+        <label>API base: <input id="api" value="http://localhost:5000/api/sql" style="width:320px"></label>
+        <button id="run">Exécuter</button>
+    </div>
+
+    <div id="status"></div>
+    <div id="out"></div>
+
+    <script>
+        const runBtn = document.getElementById('run');
+        const out = document.getElementById('out');
+        const status = document.getElementById('status');
+        runBtn.onclick = async () => {
+            out.innerHTML = ""; status.textContent = "Exécution…";
+            const endpoint = document.getElementById('api').value;
+            const sql = document.getElementById('sql').value;
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sql })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || res.statusText);
+
+                const rows = data.rows || [];
+                status.innerHTML = `<div class="rowcount">${rows.length} ligne(s)</div>`;
+                if (!rows.length) { out.textContent = "Aucun résultat."; return; }
+
+                const cols = Object.keys(rows[0]);
+                let html = "<table><thead><tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr></thead><tbody>";
+                for (const r of rows) {
+                    html += "<tr>" + cols.map(c => `<td>${escapeHtml(String(r[c] ?? ""))}</td>`).join("") + "</tr>";
+                }
+                html += "</tbody></table>";
+                out.innerHTML = html;
+            } catch (e) {
+                status.innerHTML = `<div class="error">${e.message}</div>`;
+            }
+        };
+
+        function escapeHtml(s) {
+            return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+    </script>
+</body>
+
+</html>
