@@ -25,7 +25,7 @@ docker run --name pg-td1 \
   -p 5432:5432 -d postgres:16
 ```
 
-Option B : avec PostgreSQL local
+#### **Option B : avec PostgreSQL local**
 
 Assure-toi que le service est démarré :
 
